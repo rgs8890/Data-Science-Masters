@@ -1,0 +1,82 @@
+% Load the dataset
+bank_data = readtable("C:\Users\rgs88\OneDrive\Documents\Semester 2 Data Science Masters\Neural Computing\bank_data_preprocessed.csv");
+
+%Setting input and target variables
+X = table2array(bank_data(:, ["Age", "Balance", "IsActiveMember", "Gender"]));
+y = table2array(bank_data(:, "Exited"));
+
+% Define the neural network architecture
+input_layer_size = size(X,1);
+hidden_layer_size = 10;
+output_layer_size = size(y,1);
+learning_rate = 0.1;
+num_epochs = 100;
+
+% Initialize the neural network
+W1 = randn(hidden_layer_size,input_layer_size);
+b1 = randn(hidden_layer_size,1);
+W2 = randn(output_layer_size,hidden_layer_size);
+b2 = randn(output_layer_size,1);
+
+% Train the neural network
+train_loss = [];
+train_acc = [];
+train_speed = [];
+t0 = tic;
+
+for epoch = 1:num_epochs
+    % Forward pass
+    Z1 = W1 * X + b1;
+    A1 = sigmoid(Z1);
+    Z2 = W2 * A1 + b2;
+    A2 = sigmoid(Z2);
+
+    % Compute the loss
+    loss = -sum(sum(y .* log(A2) + (1-y) .* log(1-A2))) / size(y,2);
+    train_loss(epoch) = loss;
+    
+    % Compute the accuracy
+    predictions = (A2 >= 0.5);
+    targets = (y == 1);
+    acc = sum(all(predictions == targets,1)) / size(y,2);
+    train_acc(epoch) = acc;
+
+     % Compute the speed
+    train_speed(epoch) = toc(t0);
+    t0 = tic;
+
+    % Backpropagation
+    dA2 = -y ./ A2 + (1-y) ./ (1-A2);
+    dZ2 = A2 .* (1-A2) .* dA2;
+    dW2 = dZ2 * A1';
+    db2 = sum(dZ2,2);
+    dA1 = W2' * dZ2;
+    dZ1 = A1 .* (1-A1) .* dA1;
+    dW1 = dZ1 * X';
+    db1 = sum(dZ1,2);
+
+    % Update the weights and biases
+    W1 = W1 - learning_rate * dW1;
+    b1 = b1 - learning_rate * db1;
+    W2 = W2 - learning_rate * dW2;
+    b2 = b2 - learning_rate * db2;
+end
+
+% Compute the final training loss and accuracy
+final_train_loss = train_loss(end);
+final_train_acc = train_acc(end);
+final_train_speed = train_speed(end);
+
+
+ figure
+ plot(train_loss, 'LineWidth', 2)
+ hold on
+ plot(train_acc, 'LineWidth', 2)
+
+ plot([0, num_epochs], [final_train_loss, final_train_loss], 'LineWidth', 1, 'LineStyle', '--')
+ plot([0, num_epochs], [final_train_acc, final_train_acc], 'LineWidth', 1, 'LineStyle', '--')
+ title('Training Loss and Accuracy')
+ xlabel('Epoch')
+ ylabel('Loss / Accuracy')
+ legend('Training Loss', 'Training Accuracy', 'Final Training Loss', 'Final Training Accuracy')
+% grid on
